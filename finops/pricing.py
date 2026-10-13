@@ -60,6 +60,49 @@ def break_even_utilization(discount_frac: float) -> float:
     return max(0.0, min(1.0, 1.0 - discount_frac))
 
 
+def break_even_cache_reads(
+    write_cost_ratio: float = 1.25,
+    read_discount: float = 0.10,
+    price_in_per_m: float | None = None,
+    write_cost_per_m: float | None = None,
+) -> float:
+    """Number of cache reads needed to break even against write/storage cost.
+
+    In Gemini/Anthropic, prompt caching incurs a write/storage cost (e.g., 1.25x base price
+    or explicit storage fee). Cached reads receive a discount (e.g. read_discount=0.10 = -90%).
+    Each read saves: base_price * (1 - read_discount).
+    Break-even reads = write_cost / (base_price * (1 - read_discount)).
+    With relative write_cost_ratio=1.25 and read_discount=0.10: 1.25 / 0.90 ≈ 1.389 reads.
+    """
+    if write_cost_per_m is not None and price_in_per_m is not None and price_in_per_m > 0:
+        savings_per_read = price_in_per_m * (1.0 - read_discount)
+        return write_cost_per_m / savings_per_read if savings_per_read > 0 else 0.0
+    denom = 1.0 - read_discount
+    if denom <= 0:
+        return 0.0
+    return write_cost_ratio / denom
+
+
+def cache_is_worth_it(
+    avg_cache_reads: float,
+    write_cost: float = 1.25,
+    read_discount: float = 0.10,
+    price_in_per_m: float | None = None,
+) -> bool:
+    """Check if prompt caching is economically worth it for a workload.
+
+    Returns True if average read repetitions exceed the break-even threshold.
+    Supports either relative write ratio (default 1.25x) or absolute $/1M values.
+    """
+    be = break_even_cache_reads(
+        write_cost_ratio=write_cost,
+        read_discount=read_discount,
+        price_in_per_m=price_in_per_m,
+        write_cost_per_m=write_cost if price_in_per_m is not None else None,
+    )
+    return avg_cache_reads > be
+
+
 def recommend_tier(hours_per_day: float, interruptible: bool, reserved_discount: float = 0.45) -> str:
     """Pick a purchasing tier from a workload's duty cycle + interruptibility.
 

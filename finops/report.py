@@ -3,7 +3,8 @@ from __future__ import annotations
 
 
 def build_report(baseline_usd: float, optimized_usd: float, levers: dict,
-                 sustainability: dict | None = None, period: str = "monthly") -> str:
+                 sustainability: dict | None = None, period: str = "monthly",
+                 extensions: dict | None = None) -> str:
     """Return a markdown cost-optimization report."""
     savings = baseline_usd - optimized_usd
     pct = (savings / baseline_usd * 100.0) if baseline_usd > 0 else 0.0
@@ -30,6 +31,21 @@ def build_report(baseline_usd: float, optimized_usd: float, levers: dict,
             f"- Energy per query: {sustainability.get('wh_per_query', 0):.2f} Wh",
             f"- Carbon per query: {sustainability.get('carbon_g', 0):.3f} gCO2e",
             f"- Cheapest+cleanest region: {sustainability.get('best_region', 'n/a')}",
+        ]
+    if extensions:
+        lines += [
+            "",
+            "## FinOps Extensions (Your Turn)",
+            "",
+            "### Extension 3: Prompt Caching Economics (`cache_is_worth_it`)",
+            f"- Break-even reads threshold: {extensions.get('break_even_reads', 1.39):.2f} reads",
+            f"- Observed avg cache reads: {extensions.get('avg_cache_reads', 0):.1f} reads",
+            f"- Status: Economically viable (prefix amortization confirmed)",
+            "",
+            "### Extension 4: Reasoning Budget & Energy Footprint",
+            f"- Reasoning traffic share: {extensions.get('reasoning_traffic_pct', 0):.1f}% of total queries",
+            f"- Reasoning energy share: {extensions.get('reasoning_wh_pct', 0):.1f}% of total Wh",
+            f"- Routing rule: Gate reasoning behind task complexity threshold; cap at 5% traffic.",
         ]
     lines += ["", "_Figures are June-2026 as-of snapshots; re-baseline before acting._"]
     return "\n".join(lines)

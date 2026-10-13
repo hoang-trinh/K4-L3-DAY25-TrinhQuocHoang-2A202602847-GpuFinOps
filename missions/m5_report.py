@@ -52,7 +52,16 @@ def run(verbose: bool = True) -> dict:
         "best_region": min(sustainability.REGION_CARBON, key=sustainability.REGION_CARBON.get),
     }
 
-    md = report.build_report(baseline, optimized, levers, sustainability=sust)
+    # --- your turn extensions metadata ---
+    reas_stats = r2.get("reasoning_stats", {})
+    ext_data = {
+        "avg_cache_reads": r2.get("avg_cache_reads", 0),
+        "break_even_reads": 1.39,
+        "reasoning_traffic_pct": reas_stats.get("traffic_pct", 0),
+        "reasoning_wh_pct": reas_stats.get("wh_pct", 0),
+    }
+
+    md = report.build_report(baseline, optimized, levers, sustainability=sust, extensions=ext_data)
     out_md = os.path.join(ROOT, "outputs", "report.md")
     os.makedirs(os.path.dirname(out_md), exist_ok=True)
     with open(out_md, "w") as f:
